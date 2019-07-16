@@ -22,6 +22,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicNameValuePair;
 
 /**
@@ -35,11 +36,19 @@ public class HClientExecutor {
 																						// charset=ISO-8859-1";
 	public static final String JSON_CONTENTTYPE = "application/json"; // "text/html;
 																		// charset=ISO-8859-1";
-
 	private CloseableHttpClient client = null;
+	private Map<String, String> headers = null;
 
 	public HClientExecutor(CloseableHttpClient client) {
-		this.client=client;
+		this.client = client;
+	}
+
+	public Map<String, String> getHeaders() {
+		return headers;
+	}
+
+	public void setHeaders(Map<String, String> headers) {
+		this.headers = headers;
 	}
 
 	/**
@@ -126,11 +135,11 @@ public class HClientExecutor {
 		}
 	}
 
-
 	private HClientResponse doExecutePutStream(String url, InputStream is) throws URISyntaxException, HClientException, ClientProtocolException, IOException {
 
 		URI uri = doParseURI(url, null);
 		HttpPut request = new HttpPut(uri);
+		addHeaders(request);
 		// RequestConfig requestConfig = RequestConfig.custom()
 		// .setConnectionRequestTimeout(1000 * 60 * 10)
 		// .setConnectTimeout(1000 * 60 * 10)
@@ -149,6 +158,7 @@ public class HClientExecutor {
 	private HClientResponse doExecutePostForm(String url, Map<String, String> data) throws HClientException, URISyntaxException, ClientProtocolException, IOException {
 		URI uri = doParseURI(url, null);
 		HttpPost request = new HttpPost(uri);
+		addHeaders(request);
 		request.setHeader("Content-Type", POST_CONTENTTYPE);
 		List<NameValuePair> params = mapToNvp(data);
 		request.setEntity(new UrlEncodedFormEntity(params));
@@ -164,6 +174,7 @@ public class HClientExecutor {
 
 	private HClientResponse doExecutePutJson(URI uri, String json) throws URISyntaxException, ClientProtocolException, IOException {
 		HttpPut request = new HttpPut(uri);
+		addHeaders(request);
 		request.setHeader("Content-type", JSON_CONTENTTYPE);
 		request.setEntity(new StringEntity(json));
 		HttpClientContext context = HttpClientContext.create();
@@ -173,6 +184,7 @@ public class HClientExecutor {
 
 	private HClientResponse doExecutePostJson(URI uri, String json) throws URISyntaxException, ClientProtocolException, IOException {
 		HttpPost request = new HttpPost(uri);
+		addHeaders(request);
 		request.setHeader("Content-type", JSON_CONTENTTYPE);
 		request.setEntity(new StringEntity(json));
 		HttpClientContext context = HttpClientContext.create();
@@ -180,11 +192,22 @@ public class HClientExecutor {
 		return new HClientResponse(context);
 	}
 
+
 	private HClientResponse doExecuteGet(URI uri) throws ClientProtocolException, IOException {
+		System.out.println(uri);
 		HttpGet request = new HttpGet(uri);
+		addHeaders(request);
 		HttpClientContext context = HttpClientContext.create();
 		client.execute(request, context);
 		return new HClientResponse(context);
+	}
+	
+	private void addHeaders(AbstractHttpMessage request) {
+		if (headers != null) {
+			for (Map.Entry<String, String> h : headers.entrySet()) {
+				request.addHeader(h.getKey(), h.getValue());
+			}
+		}
 	}
 
 	/**

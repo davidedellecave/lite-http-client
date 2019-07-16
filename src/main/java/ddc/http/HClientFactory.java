@@ -4,9 +4,14 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.net.ssl.SSLContext;
 
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -23,6 +28,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.ssl.SSLContexts;
 
 public class HClientFactory {
@@ -32,6 +38,15 @@ public class HClientFactory {
 	private HClientBasicHostAuth proxyConfig = null;
 	private KeyStore clientCert;
 	private HClientBasicHostAuth basicAuth = null;
+	private Map<String,String> headers = new HashMap<>();
+	
+	public Map<String, String> getHeaders() {
+		return headers;
+	}
+
+	public void setHeaders(Map<String, String> headers) {
+		this.headers = headers;
+	}
 
 	public int getMaxTotalConnection() {
 		return maxTotalConnection;
@@ -102,9 +117,19 @@ public class HClientFactory {
 		}
 		if (credsProvider != null) {
 			builder.setDefaultCredentialsProvider(credsProvider);
-		}
-
+		}		
+		setHeaders(builder);
 		return builder.build();
+	}
+	
+	private void setHeaders(HttpClientBuilder builder) {
+		if (headers==null) return;
+		List<Header> list = new ArrayList<>();
+		for (Map.Entry<String, String> entry : headers.entrySet()) {
+			Header h = new BasicHeader(entry.getKey(), entry.getValue());
+			list.add(h);
+		}
+		builder.setDefaultHeaders(list);		
 	}
 
 	private SSLConnectionSocketFactory buildSSLConnectionFactory(KeyStore keyStore) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
